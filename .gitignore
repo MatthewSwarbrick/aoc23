@@ -1,4 +1,4 @@
 .DS_Store
-Day 1/.gradle
-Day 1/build
-Day 1/.idea
+**/.gradle
+**/build
+**/.idea

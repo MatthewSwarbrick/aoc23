@@ -4,6 +4,7 @@ const val POSSIBLE_BLUES_MAX = 14
 
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -15,6 +16,16 @@ private fun part1() {
     println("Part 1 | Answer: $result")
 }
 
+private fun part2() {
+    val result = input
+        .toGames()
+        .toRequiredCubes()
+        .toPowers()
+        .sum()
+
+    println("Part 2 | Answer: $result")
+}
+
 private fun List<String>.toGames() =
     this.map {
         val gameId = it.getGameId()
@@ -24,11 +35,25 @@ private fun List<String>.toGames() =
 
 private fun List<Game>.toPossibleGames(): List<Game> =
     this.filter { game ->
-        val maxReds = game.sets.maxBy { it.reds }.reds
+        val maxReds = game.sets.maxOf { it.reds }
         val maxGreens = game.sets.maxOf { it.greens }
         val maxBlues = game.sets.maxOf { it.blues }
 
         maxReds <= POSSIBLE_REDS_MAX && maxGreens <= POSSIBLE_GREENS_MAX && maxBlues <= POSSIBLE_BLUES_MAX
+    }
+
+private fun List<Game>.toRequiredCubes(): List<Cubes> =
+    this.map {game ->
+        val maxReds = game.sets.maxOf { it.reds }
+        val maxGreens = game.sets.maxOf { it.greens }
+        val maxBlues = game.sets.maxOf { it.blues }
+
+        Cubes(reds = maxReds, greens = maxGreens, blues = maxBlues)
+    }
+
+private fun List<Cubes>.toPowers(): List<Int> =
+    this.map {
+        it.reds * it.greens * it.blues
     }
 
 private fun String.getGameId() =
@@ -42,7 +67,7 @@ private fun String.getGameSets() =
             val reds = cubes.getColourCubeCount("red")
             val greens = cubes.getColourCubeCount("green")
             val blues = cubes.getColourCubeCount("blue")
-            GameSet(reds = reds, greens = greens, blues = blues)
+            Cubes(reds = reds, greens = greens, blues = blues)
         }
 
 private fun List<String>.getColourCubeCount(colour: String): Int {
@@ -54,5 +79,5 @@ private fun List<String>.getColourCubeCount(colour: String): Int {
         .toInt()
 }
 
-data class Game(val id: Int, val sets: List<GameSet>)
-data class GameSet(val reds: Int, val greens: Int, val blues: Int)
+data class Game(val id: Int, val sets: List<Cubes>)
+data class Cubes(val reds: Int, val greens: Int, val blues: Int)

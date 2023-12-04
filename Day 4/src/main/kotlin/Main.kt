@@ -1,5 +1,6 @@
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -11,11 +12,37 @@ private fun part1() {
     println("Part 1 | Answer: $result")
 }
 
+private fun part2() {
+    val result = input
+        .toCards()
+        .toCardResults()
+        .toWinningCards()
+        .count()
+
+    println("Part 2 | Answer: $result")
+}
+
 private fun List<String>.toCards(): List<Card> =
     this.map { it.toCard() }
 
 private fun List<Card>.toCardResults(): List<CardResult> =
     this.map { it.toCardResult() }
+
+private fun List<CardResult>.toWinningCards(): List<CardResult> {
+    var index = 0
+    val allWinningCards = this.toMutableList()
+
+    while(index < allWinningCards.size) {
+        val winningCards = allWinningCards[index].toWinningCards(this)
+        allWinningCards.addAll(winningCards)
+        index++
+    }
+
+    return allWinningCards
+}
+
+private fun CardResult.toWinningCards(allCardsResults: List<CardResult>): List<CardResult> =
+    allCardsResults.drop(this.cardId).take(this.matchingNumbers.size)
 
 private fun String.toCard(): Card {
     val cardParts = this.split("|")

@@ -1,5 +1,6 @@
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -8,6 +9,15 @@ private fun part1() {
         .getStepsToZ()
 
     println("Part 1 | Answer: $result")
+}
+
+private fun part2() {
+    val result = input
+        .toMaps()
+        .toGhostStepCounts()
+        .toTotalGhostSteps()
+
+    println("Part 2 | Answer: $result")
 }
 
 private fun List<String>.toMaps(): Maps {
@@ -36,17 +46,54 @@ private fun List<String>.toMaps(): Maps {
 private fun Maps.getStepsToZ(): Int {
     var currentNodeId = "AAA"
     var currentSteps = 0
-    while(currentNodeId != "ZZZ") {
-       this.sequence.forEach { direction ->
-           currentNodeId = when(direction) {
-               Direction.LEFT -> this.leftNodes[currentNodeId]!!
-               Direction.RIGHT -> this.rightNodes[currentNodeId]!!
-           }
-           currentSteps++
-           if(currentNodeId == "ZZZ") {
-               return currentSteps
-           }
-       }
+    while (currentNodeId != "ZZZ") {
+        this.sequence.forEach { direction ->
+            currentNodeId = when (direction) {
+                Direction.LEFT -> this.leftNodes[currentNodeId]!!
+                Direction.RIGHT -> this.rightNodes[currentNodeId]!!
+            }
+            currentSteps++
+            if (currentNodeId == "ZZZ") {
+                return currentSteps
+            }
+        }
+    }
+
+    return currentSteps
+}
+
+private fun Maps.toGhostStepCounts(): List<Long> {
+    val startNodes = this.leftNodes.keys.filter { it.endsWith("A") }
+    return startNodes.map {
+        this.getGhostStepsToZ(it)
+    }
+}
+
+private fun List<Long>.toTotalGhostSteps(): Long {
+    val minStepCount = this.min()
+    var currentSteps = minStepCount
+
+    while (this.any { (currentSteps % it) != 0L }) {
+        currentSteps += minStepCount
+    }
+
+    return currentSteps
+}
+
+private fun Maps.getGhostStepsToZ(startNode: String): Long {
+    var currentNodeId = startNode
+    var currentSteps = 0L
+    while (!currentNodeId.endsWith("Z")) {
+        this.sequence.forEach { direction ->
+            currentNodeId = when (direction) {
+                Direction.LEFT -> this.leftNodes[currentNodeId]!!
+                Direction.RIGHT -> this.rightNodes[currentNodeId]!!
+            }
+            currentSteps++
+            if (currentNodeId.endsWith("Z")) {
+                return currentSteps
+            }
+        }
     }
 
     return currentSteps

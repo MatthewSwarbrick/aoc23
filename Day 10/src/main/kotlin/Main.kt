@@ -1,5 +1,6 @@
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -9,6 +10,22 @@ private fun part1() {
         .toFarthestPoint()
 
     println("Part 1 | Answer: $result")
+}
+
+private fun part2() {
+    val pipeMap = input
+        .toPipeMap()
+
+    val loop = pipeMap
+        .toLoop()
+
+    val nonLoopCoordinates =
+        pipeMap.keys.filter { nonLoopCoordinate -> loop.all { it.coordinate != nonLoopCoordinate } }
+
+    val enclosedCoordinates = loop.toEnclosedCoordinates(nonLoopCoordinates)
+    val result = enclosedCoordinates.count()
+
+    println("Part 2 | Answer: $result")
 }
 
 private fun List<String>.toPipeMap(): Map<Coordinate, Pipe> =
@@ -25,12 +42,12 @@ private fun Map<Coordinate, Pipe>.toLoop(): List<Pipe> {
     var pipePathsSoFar = setOf(listOf(startPipePart.value))
 
     var loopFound = false
-    while(!loopFound) {
+    while (!loopFound) {
         pipePathsSoFar = pipePathsSoFar.flatMap { pipePath ->
             val previousPipePart = pipePath.last()
             val previousCoordinate = previousPipePart.coordinate
             previousPipePart.possibleDirections.mapNotNull { direction ->
-                val newCoordinate = when(direction) {
+                val newCoordinate = when (direction) {
                     Direction.NORTH -> previousCoordinate.copy(y = previousCoordinate.y - 1)
                     Direction.EAST -> previousCoordinate.copy(x = previousCoordinate.x + 1)
                     Direction.SOUTH -> previousCoordinate.copy(y = previousCoordinate.y + 1)
@@ -38,8 +55,8 @@ private fun Map<Coordinate, Pipe>.toLoop(): List<Pipe> {
                 }
 
                 val newPipe = this[newCoordinate]
-                if(newPipe != null) {
-                    if(previousPipePart.symbol != 'S') {
+                if (newPipe != null) {
+                    if (previousPipePart.symbol != 'S') {
                         newPipe
                     } else {
                         val pipesCanConnect = newPipe.possibleDirections.any { newPartDirection ->
@@ -50,7 +67,7 @@ private fun Map<Coordinate, Pipe>.toLoop(): List<Pipe> {
                                 Direction.WEST -> newPartDirection == Direction.EAST
                             }
                         }
-                        if(pipesCanConnect) {
+                        if (pipesCanConnect) {
                             newPipe
                         } else {
                             null
@@ -62,7 +79,7 @@ private fun Map<Coordinate, Pipe>.toLoop(): List<Pipe> {
             }
                 .filter { (pipePath.count() > 2 && it.symbol == 'S') || !pipePath.contains(it) }
                 .map {
-                    if(it.symbol == 'S') {
+                    if (it.symbol == 'S') {
                         loopFound = true
                     }
 
@@ -77,6 +94,27 @@ private fun Map<Coordinate, Pipe>.toLoop(): List<Pipe> {
 private fun List<Pipe>.toFarthestPoint() =
     (this.size - 1) / 2
 
+private fun List<Pipe>.toEnclosedCoordinates(nonLoopCoordinates: List<Coordinate>): List<Coordinate> =
+    nonLoopCoordinates.mapNotNull { nonLoopCoordinate ->
+        val loopPartsRightOfPoint = this.filter {
+            it.coordinate.y == nonLoopCoordinate.y &&
+                    it.coordinate.x > nonLoopCoordinate.x
+        }.toSet()
+
+        val edgeCount = loopPartsRightOfPoint.count { it.symbol == '|' }
+        val northCorners = loopPartsRightOfPoint
+            .count {
+                it.symbol == 'F' || it.symbol == '7'
+            }
+
+        val intersectCount = edgeCount + northCorners
+        if (intersectCount % 2 == 0) {
+            null
+        } else {
+            nonLoopCoordinate
+        }
+    }
+
 private fun Char.toPossibleDirections(): List<Direction> =
     when (this) {
         'S' -> listOf(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST)
@@ -90,7 +128,12 @@ private fun Char.toPossibleDirections(): List<Direction> =
     }
 
 data class Coordinate(val x: Int, val y: Int)
-data class Pipe(val coordinate: Coordinate, val symbol: Char, val possibleDirections: List<Direction> = symbol.toPossibleDirections())
+data class Pipe(
+    val coordinate: Coordinate,
+    val symbol: Char,
+    val possibleDirections: List<Direction> = symbol.toPossibleDirections()
+)
+
 enum class Direction {
     NORTH,
     EAST,

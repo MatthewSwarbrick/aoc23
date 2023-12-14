@@ -41,13 +41,6 @@ private fun List<ConditionRecord>.toCombinations(): List<Pair<ConditionRecord, I
 
         val matchingCombinations = conditionRecord.incompleteSequence
             .toAllCombinations(conditionRecord.incompleteSequence.length, conditionRecord.damagedGroups)
-            .filter { combination ->
-                val groups = combination.split('.').filter { it.isNotBlank() }
-                conditionRecord.damagedGroups.size == groups.size &&
-                        groups.mapIndexed { index, group ->
-                            group.length == conditionRecord.damagedGroups[index]
-                        }.all { it }
-            }
 
         conditionRecord to matchingCombinations.count()
     }
@@ -55,20 +48,7 @@ private fun List<ConditionRecord>.toCombinations(): List<Pair<ConditionRecord, I
 private fun String.toAllCombinations(originalCombinationLength: Int, validGroupLengths: List<Int>): List<String> {
     val firstUnknownIndex = this.indexOfFirst { it == '?' }
     if (firstUnknownIndex == -1) {
-        return if (originalCombinationLength == this.length) {
-            val groups = this.split('.').filter { it.isNotBlank() }
-            val isValid = validGroupLengths.size == groups.size &&
-                    groups.mapIndexed { index, group ->
-                        group.length == validGroupLengths[index]
-                    }.all { it }
-            if (isValid) {
-                listOf(this)
-            } else {
-                emptyList()
-            }
-        } else {
-            listOfNotNull(this.toValidCombination(validGroupLengths))
-        }
+        return listOfNotNull(this.toValidCombination(originalCombinationLength, validGroupLengths))
     }
 
     val replacedWithHash = this.replaceRange(firstUnknownIndex, firstUnknownIndex + 1, "#")
@@ -79,13 +59,26 @@ private fun String.toAllCombinations(originalCombinationLength: Int, validGroupL
     val stringAfter = this.substring(firstUnknownIndex + 1, this.length)
     return stringAfter.toAllCombinations(originalCombinationLength, validGroupLengths).flatMap {
         listOfNotNull(
-            "$replacedWithHash$it".toValidCombination(validGroupLengths),
-            "$replacedWithDot$it".toValidCombination(validGroupLengths)
+            "$replacedWithHash$it".toValidCombination(originalCombinationLength, validGroupLengths),
+            "$replacedWithDot$it".toValidCombination(originalCombinationLength, validGroupLengths)
         )
     }
 }
 
-private fun String.toValidCombination(validGroupLengths: List<Int>): String? {
+private fun String.toValidCombination(originalCombinationLength: Int, validGroupLengths: List<Int>): String? {
+    if (originalCombinationLength == this.length) {
+        val groups = this.split('.').filter { it.isNotBlank() }
+        val isValid = validGroupLengths.size == groups.size &&
+                groups.mapIndexed { index, group ->
+                    group.length == validGroupLengths[index]
+                }.all { it }
+        return if(isValid) {
+            this
+        } else {
+            null
+        }
+    }
+
     val foundGroups = this.split('.').filter { it.isNotBlank() }
     val firstGroupIsComplete = this.startsWith('.')
 

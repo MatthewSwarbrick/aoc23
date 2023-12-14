@@ -1,5 +1,6 @@
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -9,6 +10,15 @@ private fun part1() {
         .toTotal()
 
     println("Part 1 | Answer: $result")
+}
+
+private fun part2() {
+    val result = input
+        .toMirroredViews()
+        .toSmudgedReflections()
+        .toTotal()
+
+    println("Part 2 | Answer: $result")
 }
 
 private fun List<String>.toMirroredViews(): List<MirroredView> {
@@ -36,65 +46,99 @@ private fun List<String>.toMirroredViews(): List<MirroredView> {
 }
 
 private fun List<MirroredView>.toReflections(): List<Reflection> =
+    this.map { mirroredView -> mirroredView.toReflection() }
+
+private fun List<MirroredView>.toSmudgedReflections(): List<Reflection> =
     this.map { mirroredView ->
-        var possibleReflectionXs = (0 until mirroredView.groundPieces.maxOf { it.coordinate.x }).toList()
-        mirroredView.groundPieces.groupBy { it.coordinate.y }
-            .forEach { (_, row) ->
-                possibleReflectionXs = possibleReflectionXs.filter { possibleX ->
-                    val before = row.filter { it.coordinate.x <= possibleX }
-                    val after = row.filter { it.coordinate.x > possibleX }
-                    if (before.size <= after.size) {
-                        val beforeString = before.joinToString("") { it.groundType.toChar() }.reversed()
-                        val afterString = after.joinToString("") { it.groundType.toChar() }
-                        afterString.startsWith(beforeString)
-                    } else {
-                        val beforeString = before.joinToString("") { it.groundType.toChar() }
-                        val afterString = after.joinToString("") { it.groundType.toChar() }.reversed()
-                        beforeString.endsWith(afterString)
+        val currentReflection = mirroredView.toReflection()
+        val isHorizontal = currentReflection.topY != null
+
+        mirroredView.groundPieces.firstNotNullOf { groundPieceToFlip ->
+            val smudgedMirrorView = mirroredView.copy(groundPieces = mirroredView.groundPieces.map {
+                if (it == groundPieceToFlip) {
+                    when (it.groundType) {
+                        GroundType.ASH -> it.copy(groundType = GroundType.ROCK)
+                        GroundType.ROCK -> it.copy(groundType = GroundType.ASH)
                     }
+                } else {
+                    it
+                }
+            })
+
+            val reflection = smudgedMirrorView.toReflection(currentReflection)
+            if(reflection.leftX == null && reflection.topY == null) {
+                null
+            } else {
+                reflection
+            }
+        }
+    }
+
+private fun MirroredView.toReflection(reflectionToIgnore: Reflection? = null): Reflection {
+    var possibleReflectionXs = if (reflectionToIgnore == null) {
+        (0 until this.groundPieces.maxOf { it.coordinate.x }).toList()
+    } else {
+        (0 until this.groundPieces.maxOf { it.coordinate.x })
+            .filter { x -> x != reflectionToIgnore.leftX?.let { it - 1 } }
+            .toList()
+    }
+    this.groundPieces.groupBy { it.coordinate.y }
+        .forEach { (_, row) ->
+            possibleReflectionXs = possibleReflectionXs.filter { possibleX ->
+                val before = row.filter { it.coordinate.x <= possibleX }
+                val after = row.filter { it.coordinate.x > possibleX }
+                if (before.size <= after.size) {
+                    val beforeString = before.joinToString("") { it.groundType.toChar() }.reversed()
+                    val afterString = after.joinToString("") { it.groundType.toChar() }
+                    afterString.startsWith(beforeString)
+                } else {
+                    val beforeString = before.joinToString("") { it.groundType.toChar() }
+                    val afterString = after.joinToString("") { it.groundType.toChar() }.reversed()
+                    beforeString.endsWith(afterString)
                 }
             }
-
-        var possibleReflectionYs = (0 until mirroredView.groundPieces.maxOf { it.coordinate.y }).toList()
-        mirroredView.groundPieces.groupBy { it.coordinate.x }
-            .forEach { (_, column) ->
-                possibleReflectionYs = possibleReflectionYs.filter { possibleY ->
-                    val before = column.filter { it.coordinate.y <= possibleY }
-                    val after = column.filter { it.coordinate.y > possibleY }
-                    if (before.size <= after.size) {
-                        val beforeString = before.joinToString("") { it.groundType.toChar() }.reversed()
-                        val afterString = after.joinToString("") { it.groundType.toChar() }
-                        afterString.startsWith(beforeString)
-                    } else {
-                        val beforeString = before.joinToString("") { it.groundType.toChar() }
-                        val afterString = after.joinToString("") { it.groundType.toChar() }.reversed()
-                        beforeString.endsWith(afterString)
-                    }
-                }
-            }
-
-        if(possibleReflectionXs.isEmpty() && possibleReflectionYs.isEmpty()) {
-            println("FOUND EMPTY: Xs: $possibleReflectionXs Ys: $possibleReflectionYs")
-            mirroredView.print()
-            println()
         }
 
-        Reflection(
-            topY = possibleReflectionYs.firstOrNull()?.let { it + 1 },
-            bottomY = possibleReflectionYs.firstOrNull()?.let { it + 2 },
-            leftX = possibleReflectionXs.firstOrNull()?.let { it + 1 },
-            rightX = possibleReflectionXs.firstOrNull()?.let { it + 2 }
-        )
+    var possibleReflectionYs = if (reflectionToIgnore == null) {
+        (0 until this.groundPieces.maxOf { it.coordinate.y }).toList()
+    } else {
+        (0 until this.groundPieces.maxOf { it.coordinate.y })
+            .filter { y -> y != (reflectionToIgnore.topY?.let { it - 1 }) }
+            .toList()
     }
+    this.groundPieces.groupBy { it.coordinate.x }
+        .forEach { (_, column) ->
+            possibleReflectionYs = possibleReflectionYs.filter { possibleY ->
+                val before = column.filter { it.coordinate.y <= possibleY }
+                val after = column.filter { it.coordinate.y > possibleY }
+                if (before.size <= after.size) {
+                    val beforeString = before.joinToString("") { it.groundType.toChar() }.reversed()
+                    val afterString = after.joinToString("") { it.groundType.toChar() }
+                    afterString.startsWith(beforeString)
+                } else {
+                    val beforeString = before.joinToString("") { it.groundType.toChar() }
+                    val afterString = after.joinToString("") { it.groundType.toChar() }.reversed()
+                    beforeString.endsWith(afterString)
+                }
+            }
+        }
+    return Reflection(
+        topY = possibleReflectionYs.firstOrNull()?.let { it + 1 },
+        bottomY = possibleReflectionYs.firstOrNull()?.let { it + 2 },
+        leftX = possibleReflectionXs.firstOrNull()?.let { it + 1 },
+        rightX = possibleReflectionXs.firstOrNull()?.let { it + 2 }
+    )
+}
+
 
 private fun List<Reflection>.toTotal() =
     this.sumOf { reflection ->
         var total = 0
-        if(reflection.topY != null) {
+        if (reflection.topY != null) {
             total += 100 * reflection.topY
         }
 
-        if(reflection.leftX != null) {
+        if (reflection.leftX != null) {
             total += reflection.leftX
         }
 

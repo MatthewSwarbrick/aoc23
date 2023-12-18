@@ -1,9 +1,8 @@
 import java.util.PriorityQueue
 
-const val MAX_LINE_LENGTH = 3
-
 fun main() {
     part1()
+    part2()
 }
 
 private fun part1() {
@@ -14,6 +13,14 @@ private fun part1() {
     println("Part 1 | Answer: $result")
 }
 
+private fun part2() {
+    val result = input
+        .toCityBlocks()
+        .toLowestHeatLossPath(isUltraCrucible = true)
+
+    println("Part 2 | Answer: $result")
+}
+
 private fun List<String>.toCityBlocks(): List<CityBlock> =
     this.flatMapIndexed { y, row ->
         row.mapIndexed { x, heatLoss ->
@@ -22,7 +29,9 @@ private fun List<String>.toCityBlocks(): List<CityBlock> =
         }
     }
 
-private fun List<CityBlock>.toLowestHeatLossPath(): Int {
+private fun List<CityBlock>.toLowestHeatLossPath(isUltraCrucible: Boolean = false): Int {
+    val maxLineLength = if(isUltraCrucible) { 10 } else { 3 }
+    val minLineLength = if(isUltraCrucible) { 4 } else { 1 }
     val startBlock = this.first()
     val endCoord = this.last().coordinate
     val visited = mutableMapOf<Coordinate, MutableMap<Pair<DirectionOfTravel, Int>, Int>>()
@@ -46,7 +55,10 @@ private fun List<CityBlock>.toLowestHeatLossPath(): Int {
             visited.getOrPut(currentCoord) { mutableMapOf() }[currentKey] = currentTotalHeatLoss
 
             if (currentCoord != endCoord) {
-                DirectionOfTravel.values().forEach { newDirection ->
+                val directions = if(isUltraCrucible && currentStraightLength < minLineLength) {
+                    arrayOf(currentDirection)
+                } else DirectionOfTravel.values()
+                directions.forEach { newDirection ->
                     if (newDirection == currentDirection || newDirection != currentDirection.toOpposite()) {
                         val newStraightLength = if (newDirection == currentDirection) {
                             currentStraightLength + 1
@@ -54,7 +66,7 @@ private fun List<CityBlock>.toLowestHeatLossPath(): Int {
                             1
                         }
 
-                        if (newStraightLength <= MAX_LINE_LENGTH) {
+                        if (newStraightLength <= maxLineLength) {
                             val nextCoord = newDirection.move(currentCoord)
                             this.firstOrNull { it.coordinate == nextCoord }?.let { nextBlock ->
                                 val newTotalHeatLoss = currentTotalHeatLoss + nextBlock.heatLoss
